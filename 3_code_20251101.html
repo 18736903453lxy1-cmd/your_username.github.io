@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>解开谜题，查收关心～</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* 谜题区域 */
+        .puzzle-box {
+            background: white;
+            padding: 25px 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+            width: 100%;
+            max-width: 380px;
+            margin-top: 40px;
+        }
+        .puzzle-title {
+            font-size: 17px;
+            color: #222;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .puzzle-list {
+            list-style: none;
+            margin-bottom: 22px;
+        }
+        .puzzle-list li {
+            font-size: 15px;
+            color: #444;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .input-wrap {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        #answer-input {
+            flex: 1;
+            padding: 11px 14px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+        }
+        #answer-input:focus {
+            border-color: #5cad8a;
+        }
+        #submit-btn {
+            padding: 11px 18px;
+            background-color: #5cad8a;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        #submit-btn:active {
+            background-color: #4da07a;
+        }
+        #tip {
+            font-size: 13px;
+            color: #5cad8a; /* 提示色改为友好的绿色 */
+            text-align: center;
+            display: none;
+        }
+        /* 弹窗区域（初始隐藏） */
+        .popup-area {
+            display: none;
+            width: 100%;
+            max-width: 380px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        .welcome-txt {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        /* 关心弹窗样式 */
+        .care-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.85);
+            background: white;
+            padding: 22px 18px;
+            border-radius: 10px;
+            box-shadow: 0 5px 18px rgba(0,0,0,0.12);
+            width: 82%;
+            max-width: 320px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        .care-popup.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+        .care-txt {
+            font-size: 15px;
+            color: #333;
+            line-height: 1.7;
+            margin-bottom: 18px;
+        }
+        .close-btn {
+            padding: 7px 16px;
+            background-color: #f0f0f0;
+            color: #666;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .close-btn:active {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <!-- 谜题验证区 -->
+    <div class="puzzle-box" id="puzzle-box">
+        <h3 class="puzzle-title">先玩个小谜题，马上有惊喜～</h3>
+        <ul class="puzzle-list">
+            <li>1. 二人站在土上头，朝夕相伴不分离——（打一字）</li>
+            <li>2. 模样和前刚一样，每日都要见一趟——（打一字）</li>
+            <li>3. 一竖一横门内藏，推开就能见阳光——（打一字）</li>
+            <li>4. 心中有笑眉眼弯，日子越过越舒坦——（打一字）</li>
+        </ul>
+        <div class="input-wrap">
+            <input type="text" id="answer-input" placeholder="随便填填也能进哦～">
+            <button id="submit-btn">提交</button>
+        </div>
+        <div id="tip">答案不重要！马上把关心传给你～</div>
+    </div>
+
+    <!-- 弹窗展示区（初始隐藏） -->
+    <div class="popup-area" id="popup-area">
+        <p class="welcome-txt">来啦～这几句贴心话想对你说～</p>
+    </div>
+
+    <!-- 关心弹窗（初始隐藏） -->
+    <div class="care-popup" id="care-popup">
+        <p class="care-txt" id="care-txt"></p>
+        <button class="close-btn" id="close-btn">好嘞～</button>
+    </div>
+
+    <script>
+        // 元素获取
+        const puzzleBox = document.getElementById('puzzle-box');
+        const popupArea = document.getElementById('popup-area');
+        const answerInput = document.getElementById('answer-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const tip = document.getElementById('tip');
+        const carePopup = document.getElementById('care-popup');
+        const careTxt = document.getElementById('care-txt');
+        const closeBtn = document.getElementById('close-btn');
+
+        // 核心配置
+        const correctAnswer = '天天开心'; // 保留正确谜底（不强制验证）
+        // 口语化关心话语
+        const careList = [
+            '最近别总熬夜啦，早点睡第二天才不会没精神～',
+            '记得按时吃饭呀，别饿肚子，胃不舒服可麻烦了～',
+            '要是累了就歇会儿，别硬扛，你已经很棒啦～',
+            '天气变凉的话多穿件衣服，别感冒啦～',
+            '要是有不开心的事，找朋友唠唠，别憋在心里～',
+            '偶尔也给自己放个小假，吃点喜欢的，放松下～',
+            '不管咋样，都希望你每天都能开开心心的，没烦恼～'
+        ];
+
+        // 提交答案验证：无需正确，直接进入+显示提示
+        submitBtn.addEventListener('click', () => {
+            // 显示友好提示（2秒后消失）
+            tip.style.display = 'block';
+            setTimeout(() => tip.style.display = 'none', 2000);
+            
+            // 1.5秒后隐藏谜题区，显示弹窗区，再等0.8秒出第一个弹窗
+            setTimeout(() => {
+                puzzleBox.style.display = 'none';
+                popupArea.style.display = 'block';
+                setTimeout(showNextCare, 800);
+            }, 1500);
+        });
+
+        // 弹窗逻辑
+        let currentIndex = 0; 
+        let timer = null; 
+
+        // 显示下一条关心弹窗
+        function showNextCare() {
+            if (currentIndex < careList.length) {
+                careTxt.textContent = careList[currentIndex];
+                carePopup.classList.add('show');
+                currentIndex++;
+            }
+        }
+
+        // 关闭弹窗：加快间隔（从3秒→1.5秒）
+        function closeCare() {
+            carePopup.classList.remove('show');
+            if (currentIndex < careList.length) {
+                timer = setTimeout(showNextCare, 1500); // 关键修改：缩短为1.5秒
+            }
+        }
+
+        // 点击关闭按钮触发
+        closeBtn.addEventListener('click', closeCare);
+
+        // 页面关闭时清除定时器
+        window.addEventListener('beforeunload', () => {
+            if (timer) clearTimeout(timer);
+        });
+    </script>
+</body>
+</html>
